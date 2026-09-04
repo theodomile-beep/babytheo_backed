@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎬 AI Story Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 5px;
+            font-size: 2.5em;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 25px;
+        }
+        .section-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        .section-title .badge {
+            background: #667eea;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-left: 8px;
+        }
+        .upload-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+        .upload-card {
+            border: 2px dashed #ddd;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        .upload-card:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        .upload-card.has-image {
+            border-color: #667eea;
+            border-style: solid;
+            background: #f8f9ff;
+        }
+        .upload-card img {
+            max-width: 100%;
+            max-height: 120px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+        .upload-card .label {
+            color: #999;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        .upload-card .remove-btn {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            font-size: 14px;
+            cursor: pointer;
+            display: none;
+        }
+        .upload-card.has-image .remove-btn {
+            display: block;
+        }
+        .upload-card .emoji-big {
+            font-size: 40px;
+        }
+        .story-textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+        .story-textarea:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+        .style-selector select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            background: white;
+        }
+        .generate-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 20px 0;
+        }
+        .generate-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        .generate-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        #status {
+            text-align: center;
+            padding: 10px;
+            border-radius: 10px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .status-success { color: #2e7d32; background: #e8f5e9; }
+        .status-error { color: #c62828; background: #ffebee; }
+        .status-warning { color: #e65100; background: #fff3e0; }
+        .status-info { color: #0d47a1; background: #e3f2fd; }
+
+        #video-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+        #video-container video {
+            max-width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+        .hidden { display: none; }
+
+        .story-output {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f0f7ff;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+        .story-output h4 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .story-output pre {
+            white-space: pre-wrap;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: inherit;
+            line-height: 1.8;
+            color: #333;
+            margin: 0;
+            font-size: 14px;
+        }
+        .clear-btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        .clear-btn:hover { background: #e74c3c; }
+        .flex-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 10px;
+        }
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+            font-size: 14px;
+        }
+        .history-item:last-child { border-bottom: none; }
+        .history-link {
+            color: #667eea;
+            text-decoration: none;
+        }
+        .history-link:hover { text-decoration: underline; }
+        .badge {
+            background: #667eea;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .steps {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        .steps h3 { color: #333; margin-bottom: 10px; }
+        .steps ol { padding-left: 20px; color: #555; }
+        .steps ol li { margin: 5px 0; }
+
+        .worker-status {
+            text-align: center;
+            padding: 8px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .sample-prompts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .sample-prompts button {
+            padding: 5px 12px;
+            border: 1px solid #ddd;
+            border-radius: 15px;
+            background: white;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+        .sample-prompts button:hover {
+            background: #f0f4ff;
+            border-color: #667eea;
+        }
+
+        .characters-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 5px;
+        }
+        .characters-preview .char-tag {
+            background: #f0f4ff;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 13px;
+            color: #667eea;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .characters-preview .char-tag img {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .characters-preview .char-tag .remove-char {
+            cursor: pointer;
+            color: #ff6b6b;
+            font-weight: bold;
+            margin-left: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 AI Story Generator</h1>
+        <p class="subtitle">Upload character images + describe your story → AI creates a full animation!</p>
+
+        <!-- ===== CHARACTER UPLOAD ===== -->
+        <div class="section">
+            <div class="section-title">
+                👥 Characters / Players
+                <span class="badge">Upload images</span>
+            </div>
+            <div class="upload-grid" id="characterGrid">
+                <!-- Character slots will be added here -->
+            </div>
+            <div id="charactersPreview" class="characters-preview"></div>
+            <div style="font-size: 12px; color: #999; margin-top: 5px;">
+                Click a card to upload a character image. Upload up to 5 characters.
+            </div>
+        </div>
+
+        <!-- ===== STORY DESCRIPTION ===== -->
+        <div class="section">
+            <div class="section-title">
+                📝 Describe Your Story
+                <span class="badge">What happens?</span>
+            </div>
+            <textarea 
+                id="storyInput" 
+                class="story-textarea" 
+                placeholder="Example: The players are best friends. They go on a treasure hunt in the jungle. They find a hidden cave and discover a magical map. They follow the map and find a golden treasure chest. They celebrate their adventure together."
+            ></textarea>
+            <div class="sample-prompts">
+                <span style="font-size: 12px; color: #666; margin-right: 5px;">Quick ideas:</span>
+                <button onclick="setPrompt(0)">🏴‍☠️ Treasure Hunt</button>
+                <button onclick="setPrompt(1)">🚀 Space Adventure</button>
+                <button onclick="setPrompt(2)">🏰 Royal Quest</button>
+                <button onclick="setPrompt(3)">⚽ Sports Victory</button>
+            </div>
+        </div>
+
+        <!-- ===== STYLE SELECTOR ===== -->
+        <div class="section">
+            <div class="section-title">🎨 Animation Style</div>
+            <div class="style-selector">
+                <select id="styleSelect">
+                    <option value="Pixar">Pixar</option>
+                    <option value="Cocomelon">Cocomelon</option>
+                    <option value="Disney">Disney</option>
+                    <option value="Dreamworks">Dreamworks</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- ===== GENERATE BUTTON ===== -->
+        <button class="generate-btn" id="generateBtn">🚀 Generate Animation</button>
+
+        <div id="status">Upload characters, describe your story, then click Generate.</div>
+
+        <!-- ===== VIDEO OUTPUT ===== -->
+        <div id="video-container" class="hidden">
+            <video controls>
+                <source id="videoSource" src="" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+
+        <!-- ===== STORY OUTPUT ===== -->
+        <div id="story-container" class="hidden story-output">
+            <div class="flex-row">
+                <h4>📖 AI Generated Story</h4>
+                <button class="clear-btn" id="clearStoryBtn">✕ Clear</button>
+            </div>
+            <pre id="storyContent"></pre>
+        </div>
+
+        <!-- ===== HISTORY ===== -->
+        <div class="history-section" id="historySection">
+            <h4>📋 Your Generated Videos</h4>
+            <div id="historyList">
+                <p style="color: #999; font-size: 14px;">No videos yet. Generate your first one!</p>
+            </div>
+        </div>
+
+        <!-- ===== HOW IT WORKS ===== -->
+        <div class="steps">
+            <h3>📖 How it works:</h3>
+            <ol>
+                <li>👥 Upload images of your characters/players</li>
+                <li>📝 Describe what happens in your story</li>
+                <li>🤖 AI creates a full story using your characters</li>
+                <li>🎨 Each scene becomes a Pixar-style animation</li>
+                <li>🎬 All scenes are stitched into a video</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // =====================================================
+        // Configuration
+        // =====================================================
+        // ⚠️ IMPORTANT: Replace with your Render URL
+        const API_URL = "https://babytheo-backed.onrender.com";
+        
+        // =====================================================
+        // Sample Prompts
+        // =====================================================
+        const samplePrompts = [
+            "The players are best friends. They go on a treasure hunt in the jungle. They find a hidden cave and discover a magical map. They follow the map and find a golden treasure chest. They celebrate their adventure together.",
+            "The players are astronauts. They travel to Mars and discover alien footprints. They follow the footprints and meet a friendly alien. They become friends and explore the galaxy together.",
+            "The players are knights and princesses. They live in a magical kingdom. A dragon steals the royal crown. They go on a quest to get it back. They befriend the dragon and return the crown.",
+            "The players are soccer teammates. They are losing the final match. They work together and score a goal. They win the championship and celebrate with their fans."
+        ];
+
+        function setPrompt(index) {
+            document.getElementById('storyInput').value = samplePrompts[index];
+        }
+
+        // =====================================================
+        // DOM Elements
+        // =====================================================
+        const characterGrid = document.getElementById('characterGrid');
+        const charactersPreview = document.getElementById('charactersPreview');
+        const storyInput = document.getElementById('storyInput');
+        const generateBtn = document.getElementById('generateBtn');
+        const statusDiv = document.getElementById('status');
+        const videoContainer = document.getElementById('video-container');
+        const videoSource = document.getElementById('videoSource');
+        const historyList = document.getElementById('historyList');
+        const storyContainer = document.getElementById('story-container');
+        const storyContent = document.getElementById('storyContent');
+        const clearStoryBtn = document.getElementById('clearStoryBtn');
+
+        let characters = []; // Array of {id, file, dataUrl, name}
+
+        // =====================================================
+        // Status Helper
+        // =====================================================
+        function setStatus(message, type = 'info') {
+            statusDiv.textContent = message;
+            statusDiv.className = `status-${type}`;
+        }
+
+        // =====================================================
+        // Character Grid
+        // =====================================================
+        function renderCharacterGrid() {
+            characterGrid.innerHTML = '';
+            
+            // Show existing characters
+            characters.forEach((char, index) => {
+                const card = document.createElement('div');
+                card.className = 'upload-card has-image';
+                card.innerHTML = `
+                    <img src="${char.dataUrl}" alt="${char.name || 'Character'}">
+                    <span class="label">${char.name || `Character ${index + 1}`}</span>
+                    <button class="remove-btn" data-index="${index}">✕</button>
+                `;
+                card.querySelector('.remove-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    removeCharacter(index);
+                });
+                characterGrid.appendChild(card);
+            });
+
+            // Show "Add Character" card if under limit
+            if (characters.length < 5) {
+                const addCard = document.createElement('div');
+                addCard.className = 'upload-card';
+                addCard.innerHTML = `
+                    <div class="emoji-big">+</div>
+                    <span class="label">Add Character ${characters.length + 1}</span>
+                `;
+                addCard.addEventListener('click', () => uploadCharacter());
+                characterGrid.appendChild(addCard);
+            }
+
+            updateCharactersPreview();
+        }
+
+        function uploadCharacter() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = (e) => {
+                if (e.target.files && e.target.files[0]) {
+                    const file = e.target.files[0];
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const name = prompt('Enter a name for this character (optional):', `Character ${characters.length + 1}`);
+                        characters.push({
+                            id: Date.now(),
+                            file: file,
+                            dataUrl: event.target.result,
+                            name: name || `Character ${characters.length + 1}`
+                        });
+                        renderCharacterGrid();
+                        setStatus(`✅ Added character: ${characters[characters.length - 1].name}`, 'success');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+            input.click();
+        }
+
+        function removeCharacter(index) {
+            const name = characters[index].name || 'Character';
+            characters.splice(index, 1);
+            renderCharacterGrid();
+            setStatus(`🗑️ Removed ${name}`, 'info');
+        }
+
+        function updateCharactersPreview() {
+            if (characters.length === 0) {
+                charactersPreview.innerHTML = '<span style="color: #999; font-size: 13px;">No characters uploaded yet.</span>';
+                return;
+            }
+            charactersPreview.innerHTML = characters.map((char, i) => `
+                <span class="char-tag">
+                    <img src="${char.dataUrl}" alt="${char.name}">
+                    ${char.name || `Char ${i+1}`}
+                    <span class="remove-char" onclick="removeCharacter(${i})">×</span>
+                </span>
+            `).join('');
+        }
+
+        // =====================================================
+        // Display Story
+        // =====================================================
+        function displayStory(storyText, scenes) {
+            if (storyText) {
+                let formatted = storyText;
+                if (scenes && scenes.length > 0) {
+                    formatted = '';
+                    scenes.forEach((scene, index) => {
+                        let clean = scene.replace(/^\d+\.\s*/, '');
+                        formatted += `🎬 Scene ${index + 1}: ${clean}\n\n`;
+                    });
+                }
+              storyContent.textContent = formatted;
+                storyContainer.classList.remove('hidden');
+            }
+        }
+
+        clearStoryBtn.addEventListener('click', () => {
+            storyContainer.classList.add('hidden');
+            storyContent.textContent = '';
+        });
+
+        // =====================================================
+        // Generate
+        // =====================================================
+        generateBtn.addEventListener('click', async () => {
+            // Validate
+            if (characters.length === 0) {
+                setStatus('❌ Please upload at least one character image!', 'error');
+                return;
+            }
+            if (!storyInput.value.trim()) {
+                setStatus('❌ Please describe your story!', 'error');
+                return;
+            }
+
+            const style = document.getElementById('styleSelect').value;
+
+            generateBtn.disabled = true;
+            generateBtn.textContent = '⏳ Generating...';
+            setStatus('🔄 Uploading characters and generating story...', 'warning');
+
+            try {
+                // Upload characters one by one
+                const uploadedChars = [];
+                for (const char of characters) {
+                    const formData = new FormData();
+                    formData.append('image', char.file);
+                    formData.append('name', char.name || 'Character');
+                    
+                    const response = await fetch(`${API_URL}/upload-character`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Upload failed: ${response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    uploadedChars.push(result);
+                }
+
+                setStatus('🔄 Characters uploaded. Generating story and video...', 'warning');
+
+                // Generate story and video
+                const generateResponse = await fetch(`${API_URL}/generate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        story_description: storyInput.value.trim(),
+                        style: style
+                    })
+                });
+
+                if (!generateResponse.ok) {
+                    throw new Error(`Generation failed: ${generateResponse.status}`);
+                }
+
+                const result = await generateResponse.json();
+
+                if (result.status === 'complete' && result.video_url) {
+                    // Show video
+                    videoSource.src = result.video_url;
+                    videoContainer.classList.remove('hidden');
+                    setStatus(`✅ Video generated! Total: ${result.total_generations} videos`, 'success');
+
+                    // Display story
+                    if (result.story) {
+                        displayStory(result.story, result.scenes);
+                    }
+                    
+                    // Refresh history
+                    loadHistory();
+                } else {
+                    setStatus('⚠️ Generation incomplete', 'error');
+                }
+
+            } catch (error) {
+                setStatus(`❌ Error: ${error.message}`, 'error');
+                console.error('Generation error:', error);
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.textContent = '🚀 Generate Animation';
+            }
+        });
+
+        // =====================================================
+        // History
+        // =====================================================
+        async function loadHistory() {
+            try {
+                const response = await fetch(`${API_URL}/history`);
+                if (!response.ok) throw new Error('Failed to load history');
+                const data = await response.json();
+
+                if (data.videos && data.videos.length > 0) {
+                    historyList.innerHTML = `
+                        <div style="font-size: 14px; color: #666; margin-bottom: 10px;">
+                            Total: ${data.total_generations} videos
+                        </div>
+                    `;
+                    const recent = data.videos.slice(-5).reverse();
+                    recent.forEach(video => {
+                        const item = document.createElement('div');
+                        item.className = 'history-item';
+                        item.innerHTML = `
+                            <span>🎬 ${video.filename}</span>
+                            <span>
+                                <span class="badge">${video.style}</span>
+                                <a href="${API_URL}/videos/${video.filename}" target="_blank" class="history-link">▶️ Watch</a>
+                            </span>
+                        `;
+                        historyList.appendChild(item);
+                    });
+                } else {
+                    historyList.innerHTML = `<p style="color: #999; font-size: 14px;">No videos yet. Generate your first one!</p>`;
+                }
+            } catch (error) {
+                console.error('Error loading history:', error);
+            }
+        }
+
+        // =====================================================
+        // Check Server
+        // =====================================================
+        async function checkServer() {
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const old = document.querySelector('.worker-status');
+                    if (old) old.remove();
+                    const div = document.createElement('div');
+                    div.className = 'worker-status';
+                    div.style.background = '#e8f5e9';
+                    div.style.color = '#2e7d32';
+                    div.innerHTML = `✅ Server online | Total videos: ${data.total_videos || 0}`;
+                    document.querySelector('.steps').before(div);
+                }
+            } catch (error) {
+                console.error('Server health check failed:', error);
+            }
+        }
+
+        // =====================================================
+        // Initialize
+        // =====================================================
+        renderCharacterGrid();
+        loadHistory();
+        checkServer();
+        setInterval(loadHistory, 30000);
+        setInterval(checkServer, 60000);
+
+        // Make functions globally accessible
+        window.removeCharacter = removeCharacter;
+        window.setPrompt = setPrompt;
+    </script>
+</body>
+</html>
